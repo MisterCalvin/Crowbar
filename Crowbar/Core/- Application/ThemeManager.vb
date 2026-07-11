@@ -94,8 +94,6 @@ Public Module ThemeManager
 			treeView.ForeColor = inputTextColor
 		ElseIf TypeOf control Is ToolStrip Then
 			ApplyToolStripTheme(CType(control, ToolStrip), darkModeIsEnabled)
-		ElseIf TypeOf control Is TabControl Then
-			ApplyTabControlTheme(CType(control, TabControl), darkModeIsEnabled)
 		ElseIf TypeOf control Is LinkLabel Then
 			ApplyLinkLabelTheme(CType(control, LinkLabel), darkModeIsEnabled)
 		End If
@@ -162,20 +160,6 @@ Public Module ThemeManager
 			grid.RowHeadersDefaultCellStyle.BackColor = SystemColors.Control
 			grid.RowHeadersDefaultCellStyle.ForeColor = SystemColors.ControlText
 			grid.EnableHeadersVisualStyles = True
-		End If
-	End Sub
-
-	Private Sub ApplyTabControlTheme(ByVal tabControl As TabControl, ByVal darkModeIsEnabled As Boolean)
-		RemoveHandler tabControl.DrawItem, AddressOf TabControl_DrawItem
-		If darkModeIsEnabled Then
-			tabControl.DrawMode = TabDrawMode.OwnerDrawFixed
-			tabControl.BackColor = DarkBackColor
-			tabControl.ForeColor = DarkTextColor
-			AddHandler tabControl.DrawItem, AddressOf TabControl_DrawItem
-		Else
-			tabControl.DrawMode = TabDrawMode.Normal
-			tabControl.BackColor = SystemColors.Control
-			tabControl.ForeColor = SystemColors.ControlText
 		End If
 	End Sub
 
@@ -247,22 +231,6 @@ Public Module ThemeManager
 		Dim text As String = comboBox.GetItemText(comboBox.Items(e.Index))
 		Using textBrush As New SolidBrush(DarkTextColor)
 			e.Graphics.DrawString(text, e.Font, textBrush, e.Bounds)
-		End Using
-	End Sub
-
-	Private Sub TabControl_DrawItem(ByVal sender As Object, ByVal e As DrawItemEventArgs)
-		Dim tabControl As TabControl = CType(sender, TabControl)
-		Dim isSelected As Boolean = (e.State And DrawItemState.Selected) = DrawItemState.Selected
-		Dim bounds As Rectangle = e.Bounds
-		bounds.Inflate(-1, -1)
-
-		Using backgroundBrush As New SolidBrush(If(isSelected, DarkPanelColor, DarkBackColor))
-			e.Graphics.FillRectangle(backgroundBrush, bounds)
-		End Using
-
-		Dim textBounds As Rectangle = Rectangle.Inflate(bounds, -6, -2)
-		Using textBrush As New SolidBrush(If(isSelected, DarkTextColor, DarkMutedTextColor))
-			e.Graphics.DrawString(tabControl.TabPages(e.Index).Text, e.Font, textBrush, textBounds)
 		End Using
 	End Sub
 
