@@ -1,28 +1,63 @@
 Public Module ThemeManager
 
+	Private ReadOnly DarkBackColor As Color = Color.FromArgb(30, 30, 30)
+	Private ReadOnly DarkPanelColor As Color = Color.FromArgb(34, 34, 34)
+	Private ReadOnly DarkInputColor As Color = Color.FromArgb(42, 42, 42)
+	Private ReadOnly DarkButtonColor As Color = Color.FromArgb(50, 50, 50)
+	Private ReadOnly DarkBorderColor As Color = Color.FromArgb(72, 72, 72)
+	Private ReadOnly DarkTextColor As Color = Color.FromArgb(232, 232, 232)
+	Private ReadOnly DarkMutedTextColor As Color = Color.FromArgb(180, 180, 180)
+	Private ReadOnly DarkSelectionColor As Color = Color.FromArgb(62, 92, 138)
+	Private ReadOnly DarkLinkColor As Color = Color.FromArgb(130, 175, 255)
+
 	Public Sub ApplyTheme(ByVal root As Control, ByVal darkModeIsEnabled As Boolean)
 		If root Is Nothing Then
 			Return
 		End If
 
+		ApplyWindowTheme(root, darkModeIsEnabled)
 		ApplyControlTheme(root, darkModeIsEnabled)
 	End Sub
 
-	Private Sub ApplyControlTheme(ByVal control As Control, ByVal darkModeIsEnabled As Boolean)
-		Dim backColor As Color = If(darkModeIsEnabled, Color.FromArgb(32, 32, 32), SystemColors.Control)
-		Dim panelColor As Color = If(darkModeIsEnabled, Color.FromArgb(40, 40, 40), SystemColors.Control)
-		Dim inputColor As Color = If(darkModeIsEnabled, Color.FromArgb(24, 24, 24), SystemColors.Window)
-		Dim textColor As Color = If(darkModeIsEnabled, Color.FromArgb(235, 235, 235), SystemColors.ControlText)
-		Dim inputTextColor As Color = If(darkModeIsEnabled, Color.FromArgb(245, 245, 245), SystemColors.WindowText)
+	Private Sub ApplyWindowTheme(ByVal control As Control, ByVal darkModeIsEnabled As Boolean)
+		Dim form As Form = TryCast(control, Form)
+		If form Is Nothing OrElse Not form.IsHandleCreated Then
+			Return
+		End If
 
-		If TypeOf control Is TextBoxBase OrElse TypeOf control Is ComboBox OrElse TypeOf control Is ListBox Then
+		Try
+			Dim enabled As Integer = If(darkModeIsEnabled, 1, 0)
+			If DwmSetWindowAttribute(form.Handle, 20, enabled, 4) <> 0 Then
+				DwmSetWindowAttribute(form.Handle, 19, enabled, 4)
+			End If
+		Catch ex As Exception
+			' Older Windows versions simply keep the normal title bar.
+		End Try
+	End Sub
+
+	Private Sub ApplyControlTheme(ByVal control As Control, ByVal darkModeIsEnabled As Boolean)
+		Dim backColor As Color = If(darkModeIsEnabled, DarkBackColor, SystemColors.Control)
+		Dim panelColor As Color = If(darkModeIsEnabled, DarkPanelColor, SystemColors.Control)
+		Dim inputColor As Color = If(darkModeIsEnabled, DarkInputColor, SystemColors.Window)
+		Dim textColor As Color = If(darkModeIsEnabled, DarkTextColor, SystemColors.ControlText)
+		Dim inputTextColor As Color = If(darkModeIsEnabled, DarkTextColor, SystemColors.WindowText)
+
+		If TypeOf control Is TextBoxBase OrElse TypeOf control Is ListBox Then
 			control.BackColor = inputColor
 			control.ForeColor = inputTextColor
+		ElseIf TypeOf control Is ComboBox Then
+			ApplyComboBoxTheme(CType(control, ComboBox), darkModeIsEnabled)
 		ElseIf TypeOf control Is Button Then
 			Dim button As Button = CType(control, Button)
 			button.UseVisualStyleBackColor = Not darkModeIsEnabled
-			button.BackColor = If(darkModeIsEnabled, Color.FromArgb(55, 55, 55), SystemColors.Control)
+			button.FlatStyle = If(darkModeIsEnabled, FlatStyle.Flat, FlatStyle.Standard)
+			button.BackColor = If(darkModeIsEnabled, DarkButtonColor, SystemColors.Control)
 			button.ForeColor = textColor
+			If darkModeIsEnabled Then
+				button.FlatAppearance.BorderColor = DarkBorderColor
+				button.FlatAppearance.MouseOverBackColor = Color.FromArgb(62, 62, 62)
+				button.FlatAppearance.MouseDownBackColor = Color.FromArgb(72, 72, 72)
+			End If
 		ElseIf TypeOf control Is CheckBox Then
 			Dim checkBox As CheckBox = CType(control, CheckBox)
 			checkBox.UseVisualStyleBackColor = Not darkModeIsEnabled
@@ -36,7 +71,10 @@ Public Module ThemeManager
 		ElseIf TypeOf control Is TabPage Then
 			control.BackColor = backColor
 			control.ForeColor = textColor
-		ElseIf TypeOf control Is Panel OrElse TypeOf control Is GroupBox Then
+		ElseIf TypeOf control Is GroupBox Then
+			control.BackColor = backColor
+			control.ForeColor = textColor
+		ElseIf TypeOf control Is Panel OrElse TypeOf control Is SplitContainer Then
 			control.BackColor = panelColor
 			control.ForeColor = textColor
 		Else
@@ -56,6 +94,10 @@ Public Module ThemeManager
 			treeView.ForeColor = inputTextColor
 		ElseIf TypeOf control Is ToolStrip Then
 			ApplyToolStripTheme(CType(control, ToolStrip), darkModeIsEnabled)
+		ElseIf TypeOf control Is TabControl Then
+			ApplyTabControlTheme(CType(control, TabControl), darkModeIsEnabled)
+		ElseIf TypeOf control Is LinkLabel Then
+			ApplyLinkLabelTheme(CType(control, LinkLabel), darkModeIsEnabled)
 		End If
 
 		If control.ContextMenuStrip IsNot Nothing Then
@@ -67,28 +109,54 @@ Public Module ThemeManager
 		Next
 	End Sub
 
+	Private Sub ApplyComboBoxTheme(ByVal comboBox As ComboBox, ByVal darkModeIsEnabled As Boolean)
+		comboBox.BackColor = If(darkModeIsEnabled, DarkInputColor, SystemColors.Window)
+		comboBox.ForeColor = If(darkModeIsEnabled, DarkTextColor, SystemColors.WindowText)
+
+		RemoveHandler comboBox.DrawItem, AddressOf ComboBox_DrawItem
+		If darkModeIsEnabled Then
+			comboBox.FlatStyle = FlatStyle.Flat
+			comboBox.DrawMode = DrawMode.OwnerDrawFixed
+			AddHandler comboBox.DrawItem, AddressOf ComboBox_DrawItem
+		Else
+			comboBox.FlatStyle = FlatStyle.Standard
+			comboBox.DrawMode = DrawMode.Normal
+		End If
+	End Sub
+
 	Private Sub ApplyDataGridViewTheme(ByVal grid As DataGridView, ByVal darkModeIsEnabled As Boolean)
 		If darkModeIsEnabled Then
-			grid.BackgroundColor = Color.FromArgb(24, 24, 24)
-			grid.GridColor = Color.FromArgb(70, 70, 70)
-			grid.DefaultCellStyle.BackColor = Color.FromArgb(24, 24, 24)
-			grid.DefaultCellStyle.ForeColor = Color.FromArgb(245, 245, 245)
-			grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(75, 95, 130)
+			grid.BackgroundColor = DarkInputColor
+			grid.GridColor = DarkBorderColor
+			grid.BorderStyle = BorderStyle.FixedSingle
+			grid.DefaultCellStyle.BackColor = DarkInputColor
+			grid.DefaultCellStyle.ForeColor = DarkTextColor
+			grid.DefaultCellStyle.SelectionBackColor = DarkSelectionColor
 			grid.DefaultCellStyle.SelectionForeColor = Color.White
-			grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(30, 30, 30)
-			grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(48, 48, 48)
-			grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(235, 235, 235)
-			grid.RowHeadersDefaultCellStyle.BackColor = Color.FromArgb(48, 48, 48)
-			grid.RowHeadersDefaultCellStyle.ForeColor = Color.FromArgb(235, 235, 235)
+			grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(37, 37, 37)
+			grid.AlternatingRowsDefaultCellStyle.ForeColor = DarkTextColor
+			grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(45, 45, 45)
+			grid.ColumnHeadersDefaultCellStyle.ForeColor = DarkTextColor
+			grid.RowHeadersDefaultCellStyle.BackColor = Color.FromArgb(45, 45, 45)
+			grid.RowHeadersDefaultCellStyle.ForeColor = DarkTextColor
 			grid.EnableHeadersVisualStyles = False
+
+			For Each column As DataGridViewColumn In grid.Columns
+				column.DefaultCellStyle.BackColor = DarkInputColor
+				column.DefaultCellStyle.ForeColor = DarkTextColor
+				column.DefaultCellStyle.SelectionBackColor = DarkSelectionColor
+				column.DefaultCellStyle.SelectionForeColor = Color.White
+			Next
 		Else
 			grid.BackgroundColor = SystemColors.AppWorkspace
 			grid.GridColor = SystemColors.ControlDark
+			grid.BorderStyle = BorderStyle.FixedSingle
 			grid.DefaultCellStyle.BackColor = SystemColors.Window
 			grid.DefaultCellStyle.ForeColor = SystemColors.ControlText
 			grid.DefaultCellStyle.SelectionBackColor = SystemColors.Highlight
 			grid.DefaultCellStyle.SelectionForeColor = SystemColors.HighlightText
 			grid.AlternatingRowsDefaultCellStyle.BackColor = SystemColors.Window
+			grid.AlternatingRowsDefaultCellStyle.ForeColor = SystemColors.ControlText
 			grid.ColumnHeadersDefaultCellStyle.BackColor = SystemColors.Control
 			grid.ColumnHeadersDefaultCellStyle.ForeColor = SystemColors.ControlText
 			grid.RowHeadersDefaultCellStyle.BackColor = SystemColors.Control
@@ -97,10 +165,43 @@ Public Module ThemeManager
 		End If
 	End Sub
 
-	Private Sub ApplyToolStripTheme(ByVal toolStrip As ToolStrip, ByVal darkModeIsEnabled As Boolean)
+	Private Sub ApplyTabControlTheme(ByVal tabControl As TabControl, ByVal darkModeIsEnabled As Boolean)
+		RemoveHandler tabControl.DrawItem, AddressOf TabControl_DrawItem
 		If darkModeIsEnabled Then
-			toolStrip.BackColor = Color.FromArgb(40, 40, 40)
-			toolStrip.ForeColor = Color.FromArgb(235, 235, 235)
+			tabControl.DrawMode = TabDrawMode.OwnerDrawFixed
+			tabControl.BackColor = DarkBackColor
+			tabControl.ForeColor = DarkTextColor
+			AddHandler tabControl.DrawItem, AddressOf TabControl_DrawItem
+		Else
+			tabControl.DrawMode = TabDrawMode.Normal
+			tabControl.BackColor = SystemColors.Control
+			tabControl.ForeColor = SystemColors.ControlText
+		End If
+	End Sub
+
+	Private Sub ApplyLinkLabelTheme(ByVal linkLabel As LinkLabel, ByVal darkModeIsEnabled As Boolean)
+		If darkModeIsEnabled Then
+			linkLabel.BackColor = DarkBackColor
+			linkLabel.ForeColor = DarkTextColor
+			linkLabel.LinkColor = DarkLinkColor
+			linkLabel.ActiveLinkColor = Color.FromArgb(170, 205, 255)
+			linkLabel.VisitedLinkColor = Color.FromArgb(180, 155, 225)
+		Else
+			linkLabel.BackColor = SystemColors.Control
+			linkLabel.ForeColor = SystemColors.ControlText
+			linkLabel.LinkColor = SystemColors.HotTrack
+			linkLabel.ActiveLinkColor = Color.Red
+			linkLabel.VisitedLinkColor = Color.Purple
+		End If
+	End Sub
+
+	Private Sub ApplyToolStripTheme(ByVal toolStrip As ToolStrip, ByVal darkModeIsEnabled As Boolean)
+		Dim renderer As ToolStripRenderer = If(darkModeIsEnabled, CType(New DarkToolStripRenderer(), ToolStripRenderer), CType(New ToolStripProfessionalRenderer(), ToolStripRenderer))
+		ToolStripManager.Renderer = renderer
+
+		If darkModeIsEnabled Then
+			toolStrip.BackColor = DarkPanelColor
+			toolStrip.ForeColor = DarkTextColor
 			toolStrip.Renderer = New DarkToolStripRenderer()
 		Else
 			toolStrip.BackColor = SystemColors.Control
@@ -114,8 +215,15 @@ Public Module ThemeManager
 	End Sub
 
 	Private Sub ApplyToolStripItemTheme(ByVal item As ToolStripItem, ByVal darkModeIsEnabled As Boolean)
-		item.BackColor = If(darkModeIsEnabled, Color.FromArgb(40, 40, 40), SystemColors.Control)
-		item.ForeColor = If(darkModeIsEnabled, Color.FromArgb(235, 235, 235), SystemColors.ControlText)
+		item.BackColor = If(darkModeIsEnabled, DarkPanelColor, SystemColors.Control)
+		item.ForeColor = If(darkModeIsEnabled, DarkTextColor, SystemColors.ControlText)
+
+		If TypeOf item Is ToolStripControlHost Then
+			Dim host As ToolStripControlHost = CType(item, ToolStripControlHost)
+			If host.Control IsNot Nothing Then
+				ApplyControlTheme(host.Control, darkModeIsEnabled)
+			End If
+		End If
 
 		If TypeOf item Is ToolStripDropDownItem Then
 			Dim dropDownItem As ToolStripDropDownItem = CType(item, ToolStripDropDownItem)
@@ -125,11 +233,57 @@ Public Module ThemeManager
 		End If
 	End Sub
 
+	Private Sub ComboBox_DrawItem(ByVal sender As Object, ByVal e As DrawItemEventArgs)
+		If e.Index < 0 Then
+			Return
+		End If
+
+		Dim comboBox As ComboBox = CType(sender, ComboBox)
+		Dim selected As Boolean = (e.State And DrawItemState.Selected) = DrawItemState.Selected
+		Using backgroundBrush As New SolidBrush(If(selected, DarkSelectionColor, DarkInputColor))
+			e.Graphics.FillRectangle(backgroundBrush, e.Bounds)
+		End Using
+
+		Dim text As String = comboBox.GetItemText(comboBox.Items(e.Index))
+		Using textBrush As New SolidBrush(DarkTextColor)
+			e.Graphics.DrawString(text, e.Font, textBrush, e.Bounds)
+		End Using
+	End Sub
+
+	Private Sub TabControl_DrawItem(ByVal sender As Object, ByVal e As DrawItemEventArgs)
+		Dim tabControl As TabControl = CType(sender, TabControl)
+		Dim isSelected As Boolean = (e.State And DrawItemState.Selected) = DrawItemState.Selected
+		Dim bounds As Rectangle = e.Bounds
+		bounds.Inflate(-1, -1)
+
+		Using backgroundBrush As New SolidBrush(If(isSelected, DarkPanelColor, DarkBackColor))
+			e.Graphics.FillRectangle(backgroundBrush, bounds)
+		End Using
+
+		Dim textBounds As Rectangle = Rectangle.Inflate(bounds, -6, -2)
+		Using textBrush As New SolidBrush(If(isSelected, DarkTextColor, DarkMutedTextColor))
+			e.Graphics.DrawString(tabControl.TabPages(e.Index).Text, e.Font, textBrush, textBounds)
+		End Using
+	End Sub
+
 	Private Class DarkToolStripRenderer
 		Inherits ToolStripProfessionalRenderer
 
 		Public Sub New()
 			MyBase.New(New DarkColorTable())
+		End Sub
+
+		Protected Overrides Sub OnRenderSeparator(ByVal e As ToolStripSeparatorRenderEventArgs)
+			Using pen As New Pen(DarkBorderColor)
+				e.Graphics.DrawLine(pen, 4, e.Item.Height \ 2, e.Item.Width - 4, e.Item.Height \ 2)
+			End Using
+		End Sub
+
+		Protected Overrides Sub OnRenderItemCheck(ByVal e As ToolStripItemImageRenderEventArgs)
+			Using brush As New SolidBrush(DarkSelectionColor)
+				e.Graphics.FillRectangle(brush, e.ImageRectangle)
+			End Using
+			MyBase.OnRenderItemCheck(e)
 		End Sub
 	End Class
 
@@ -138,45 +292,85 @@ Public Module ThemeManager
 
 		Public Overrides ReadOnly Property ToolStripDropDownBackground As Color
 			Get
-				Return Color.FromArgb(40, 40, 40)
+				Return DarkPanelColor
 			End Get
 		End Property
 
 		Public Overrides ReadOnly Property ImageMarginGradientBegin As Color
 			Get
-				Return Color.FromArgb(40, 40, 40)
+				Return DarkPanelColor
 			End Get
 		End Property
 
 		Public Overrides ReadOnly Property ImageMarginGradientMiddle As Color
 			Get
-				Return Color.FromArgb(40, 40, 40)
+				Return DarkPanelColor
 			End Get
 		End Property
 
 		Public Overrides ReadOnly Property ImageMarginGradientEnd As Color
 			Get
-				Return Color.FromArgb(40, 40, 40)
+				Return DarkPanelColor
 			End Get
 		End Property
 
 		Public Overrides ReadOnly Property MenuItemSelected As Color
 			Get
-				Return Color.FromArgb(62, 72, 90)
+				Return Color.FromArgb(52, 72, 104)
+			End Get
+		End Property
+
+		Public Overrides ReadOnly Property MenuItemSelectedGradientBegin As Color
+			Get
+				Return Color.FromArgb(52, 72, 104)
+			End Get
+		End Property
+
+		Public Overrides ReadOnly Property MenuItemSelectedGradientEnd As Color
+			Get
+				Return Color.FromArgb(52, 72, 104)
+			End Get
+		End Property
+
+		Public Overrides ReadOnly Property MenuItemPressedGradientBegin As Color
+			Get
+				Return DarkInputColor
+			End Get
+		End Property
+
+		Public Overrides ReadOnly Property MenuItemPressedGradientMiddle As Color
+			Get
+				Return DarkInputColor
+			End Get
+		End Property
+
+		Public Overrides ReadOnly Property MenuItemPressedGradientEnd As Color
+			Get
+				Return DarkInputColor
 			End Get
 		End Property
 
 		Public Overrides ReadOnly Property MenuItemBorder As Color
 			Get
-				Return Color.FromArgb(85, 95, 115)
+				Return DarkBorderColor
 			End Get
 		End Property
 
 		Public Overrides ReadOnly Property MenuBorder As Color
 			Get
-				Return Color.FromArgb(70, 70, 70)
+				Return DarkBorderColor
+			End Get
+		End Property
+
+		Public Overrides ReadOnly Property ToolStripBorder As Color
+			Get
+				Return DarkBorderColor
 			End Get
 		End Property
 	End Class
+
+	<System.Runtime.InteropServices.DllImport("dwmapi.dll")>
+	Private Function DwmSetWindowAttribute(ByVal hwnd As IntPtr, ByVal attribute As Integer, ByRef attributeValue As Integer, ByVal attributeSize As Integer) As Integer
+	End Function
 
 End Module
