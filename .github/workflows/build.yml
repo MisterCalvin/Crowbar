@@ -1,0 +1,68 @@
+name: Build Crowbar
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ '*' ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2019
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore Crowbar.sln
+
+      - name: Build Solution (Release x86)
+        run: msbuild Crowbar.sln /p:Configuration=Release /p:Platform=x86 /p:WarningLevel=0
+
+      - name: List build output
+        run: |
+          Write-Host "=== Crowbar bin\x86\Release ===" 
+          Get-ChildItem -Path "Crowbar\bin\x86\Release" -Recurse | Select-Object FullName
+          Write-Host "=== Crowbar Resources ===" 
+          Get-ChildItem -Path "Crowbar\Resources" | Select-Object Name
+        shell: pwsh
+
+      - name: Prepare Release Artifacts
+        run: |
+          # Create output directory
+          New-Item -ItemType Directory -Force -Path "release"
+          
+          # Copy main executable
+          Copy-Item "Crowbar\bin\x86\Release\Crowbar.exe" -Destination "release\"
+          
+          # Copy required DLLs and resources
+          Copy-Item "Crowbar\Resources\Steamworks.NET.dll" -Destination "release\"
+          Copy-Item "Crowbar\Resources\steam_api.dll" -Destination "release\"
+          Copy-Item "Crowbar\Resources\lzham_x86.dll" -Destination "release\"
+          Copy-Item "Crowbar\Resources\7zr.exe" -Destination "release\"
+          Copy-Item "Crowbar\Resources\lzma.exe" -Destination "release\"
+          Copy-Item "Crowbar\Resources\Crowbar Settings.xml" -Destination "release\"
+          
+          # Copy helper executables (built as dependencies)
+          Copy-Item "Crowbar\Resources\CrowbarSteamPipe.exe" -Destination "release\"
+          Copy-Item "Crowbar\Resources\CrowbarLauncher.exe" -Destination "release\"
+          
+          Write-Host "=== Release folder contents ==="
+          Get-ChildItem -Path "release" | Select-Object Name, Length
+        shell: pwsh
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Crowbar-Release-x86
+          path: release/
+          retention-days: 90
+          if-no-files-found: error
