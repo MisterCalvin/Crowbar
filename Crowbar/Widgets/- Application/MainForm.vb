@@ -52,6 +52,10 @@ Public Class MainForm
 				TheApp.Settings.MainWindowSelectedTabIndex = Me.MainTabControl.TabPages.IndexOf(Me.UpdateTabPage)
 			End If
 			Me.MainTabControl.SelectedIndex = TheApp.Settings.MainWindowSelectedTabIndex
+			If TheApp.Settings.DarkModeIsChecked Then
+				ThemeManager.ApplyTheme(Me, True)
+			End If
+			AddHandler TheApp.Settings.PropertyChanged, AddressOf AppSettings_PropertyChanged
 
 			Dim aScreen As Screen
 			aScreen = Screen.FromControl(Me)
@@ -135,6 +139,7 @@ Public Class MainForm
 		RemoveHandler Me.PackUserControl1.UseAllInPublishButton.Click, AddressOf Me.PackUserControl1_UseAllInPublishButton_Click
 		RemoveHandler Me.PublishUserControl1.UseInDownloadToolStripMenuItem.Click, AddressOf Me.PublishUserControl1_UseInDownloadToolStripMenuItem_Click
 		RemoveHandler Me.UpdateUserControl1.UpdateAvailable, AddressOf Me.UpdateUserControl1_UpdateAvailable
+		RemoveHandler TheApp.Settings.PropertyChanged, AddressOf AppSettings_PropertyChanged
 
 		If Me.WindowState = FormWindowState.Normal Then
 			TheApp.Settings.WindowLocation = Me.Location
@@ -222,6 +227,12 @@ Public Class MainForm
 #End Region
 
 #Region "Child Widget Event Handlers"
+
+	Private Sub AppSettings_PropertyChanged(ByVal sender As System.Object, ByVal e As System.ComponentModel.PropertyChangedEventArgs)
+		If e.PropertyName = "DarkModeIsChecked" Then
+			ThemeManager.ApplyTheme(Me, TheApp.Settings.DarkModeIsChecked)
+		End If
+	End Sub
 
 	Private Sub SetUpGamesGoBackButton_Click(sender As Object, e As EventArgs)
 		Dim gameSetupIndex As Integer

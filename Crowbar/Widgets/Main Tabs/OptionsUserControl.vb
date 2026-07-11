@@ -13,6 +13,7 @@ Public Class OptionsUserControl
 
 	Protected Overrides Sub Init()
 		Me.SingleInstanceCheckBox.DataBindings.Add("Checked", TheApp.Settings, "AppIsSingleInstance", False, DataSourceUpdateMode.OnPropertyChanged)
+		Me.DarkModeCheckBox.DataBindings.Add("Checked", TheApp.Settings, "DarkModeIsChecked", False, DataSourceUpdateMode.OnPropertyChanged)
 
 		' Auto-Open
 
@@ -244,6 +245,8 @@ Public Class OptionsUserControl
 
 	Private Sub AppSettings_PropertyChanged(ByVal sender As System.Object, ByVal e As System.ComponentModel.PropertyChangedEventArgs)
 		If e.PropertyName = "AppIsSingleInstance" Then
+			TheApp.SaveAppSettings()
+		ElseIf e.PropertyName = "DarkModeIsChecked" Then
 			TheApp.SaveAppSettings()
 		ElseIf e.PropertyName = "OptionsAutoOpenVpkFileIsChecked" Then
 			Me.ApplyAutoOpenVpkFileOptions()

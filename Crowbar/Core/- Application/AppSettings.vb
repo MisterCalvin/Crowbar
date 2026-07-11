@@ -11,6 +11,7 @@ Public Class AppSettings
 		'MyBase.New()
 
 		Me.theAppIsSingleInstance = False
+		Me.theDarkModeIsChecked = False
 		Me.theWindowLocation = New Point(0, 0)
 		Me.theWindowSize = New Size(800, 600)
 		Me.theWindowState = FormWindowState.Normal
@@ -130,6 +131,18 @@ Public Class AppSettings
 		Set(ByVal value As Boolean)
 			theAppIsSingleInstance = value
 			NotifyPropertyChanged("AppIsSingleInstance")
+		End Set
+	End Property
+
+	Public Property DarkModeIsChecked() As Boolean
+		Get
+			Return Me.theDarkModeIsChecked
+		End Get
+		Set(ByVal value As Boolean)
+			If Me.theDarkModeIsChecked <> value Then
+				Me.theDarkModeIsChecked = value
+				NotifyPropertyChanged("DarkModeIsChecked")
+			End If
 		End Set
 	End Property
 
@@ -1830,6 +1843,7 @@ Public Class AppSettings
 
 	' General
 	Private theAppIsSingleInstance As Boolean
+	Private theDarkModeIsChecked As Boolean
 	Private theWindowLocation As Point
 	Private theWindowSize As Size
 	Private theWindowState As FormWindowState

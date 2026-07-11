@@ -95,6 +95,7 @@ Partial Class OptionsUserControl
 		Me.ApplyButton = New System.Windows.Forms.Button()
 		Me.ApplyPanel = New System.Windows.Forms.Panel()
 		Me.SingleInstanceCheckBox = New System.Windows.Forms.CheckBox()
+		Me.DarkModeCheckBox = New System.Windows.Forms.CheckBox()
 		Me.GroupBox1.SuspendLayout()
 		Me.Panel7.SuspendLayout()
 		Me.GroupBox2.SuspendLayout()
@@ -939,10 +940,21 @@ Partial Class OptionsUserControl
 		Me.SingleInstanceCheckBox.Text = "Restrict to single instance (only one Crowbar open at a time)"
 		Me.SingleInstanceCheckBox.UseVisualStyleBackColor = True
 		'
+		'DarkModeCheckBox
+		'
+		Me.DarkModeCheckBox.AutoSize = True
+		Me.DarkModeCheckBox.Location = New System.Drawing.Point(360, 3)
+		Me.DarkModeCheckBox.Name = "DarkModeCheckBox"
+		Me.DarkModeCheckBox.Size = New System.Drawing.Size(79, 17)
+		Me.DarkModeCheckBox.TabIndex = 5
+		Me.DarkModeCheckBox.Text = "Dark mode"
+		Me.DarkModeCheckBox.UseVisualStyleBackColor = True
+		'
 		'OptionsUserControl
 		'
 		Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
 		Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+		Me.Controls.Add(Me.DarkModeCheckBox)
 		Me.Controls.Add(Me.SingleInstanceCheckBox)
 		Me.Controls.Add(Me.ApplyPanel)
 		Me.Controls.Add(Me.GroupBox3)
@@ -1037,6 +1049,7 @@ Partial Class OptionsUserControl
 	Friend WithEvents AutoOpenFolderForDecompileRadioButton As System.Windows.Forms.RadioButton
 	Friend WithEvents AutoOpenFolderForUnpackRadioButton As System.Windows.Forms.RadioButton
 	Friend WithEvents SingleInstanceCheckBox As System.Windows.Forms.CheckBox
+	Friend WithEvents DarkModeCheckBox As System.Windows.Forms.CheckBox
 	Friend WithEvents Label14 As System.Windows.Forms.Label
 	Friend WithEvents AutoOpenFpxFileCheckBox As System.Windows.Forms.CheckBox
 	Friend WithEvents AutoOpenGmaFileCheckBox As System.Windows.Forms.CheckBox
